@@ -10,12 +10,6 @@ statistics. */
 #include "navier-stokes/centered.h"
 #include "navier-stokes/perfs.h"
 
-/**
-We have two phases e.g. air and water. For large viscosity and density
-ratios, the harmonic mean for the viscosity tends to work better than
-the default arithmetic mean. We "overload" the default by defining the
-*mu()* macro before including the code for two phases. */
-
 #define mu(f)  (1./(clamp(f,0,1)*(1./mu1 - 1./mu2) + 1./mu2))
 #include "two-phase.h"//自带vof.h与embed.h公用变量
 
@@ -74,7 +68,7 @@ bottom wall. The acceleration of gravity is set to unity, which gives
 a characteristic rise velocity also of order unity, which gives a
 maximum time for the simulation comparable to the domain size. */
 
-#define WIDTH 20
+#define WIDTH 50
 #define R0 0.5
 int LEVEL = 10;
 int LEVELMIN = 6;//注意计算网格单元与气泡直径的关系
@@ -92,8 +86,8 @@ void bubble_position_setting (scalar f)//向本函数输入两个空的scalar数
     vertex scalar phi[];//先定义一个level-set函数
     foreach_vertex() {//共32个气泡，对每一个单元格都针对32个气泡的levelset函数进行一次迭代，以确保其边角上的函数完整
     phi[] = HUGE;
-        for (double xp = -2. ; xp <= 2.; xp += 4.)//此处i、j为气泡的圆心，每一次只更迭一个气泡
-            for (double yp = -8. ; yp <= -6.  ; yp += 2.)
+        for (double xp = -21.8750 ; xp <= 21.8750; xp += 6.250)//此处i、j为气泡的圆心，每一次只更迭一个气泡
+            for (double yp = -24. ; yp <= -18.  ; yp += 2.)
                 phi[] = intersection (phi[], (sq(x - xp) + sq(y - yp) - sq(R0)));//将每一次结果都重复输入进phi[]中
     //phi[] = -phi[];
     }//着重需要注意intersection()函数的插入机制比较奇怪，由于并没有单独列出经过调试猜测应该是在每一次遍历时取小值，是故必须将levelset函数先设置为气泡外部为正，气泡内部为负值，然后反向，否则会出现全部都取为负数的情况
