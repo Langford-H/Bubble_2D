@@ -183,23 +183,41 @@ event adapt (i++) {
 
 Every ten timesteps, we output the time, volume, position, and
 velocity of the bubble. */
-
-event logfile (i += 10) {
-  double xb = 0., yb = 0., sb = 0.;
-  double vbx = 0., vby = 0.;
-  foreach(reduction(+:xb) reduction(+:yb) 
-	  reduction(+:vbx) reduction(+:vby) 
-	  reduction(+:sb)) {
-    double dv = (1-f[])*dv();
-    xb += x*dv;
-    yb += y*dv;
-    sb += dv;
+event spectra (t = 15)
+{
+  scalar u_fy[], u_fx[];//定义速度振荡
+  double u_ya = 0., u_xa = 0.;//定义该方向上的平均速度
+  int i = 0;
+  foreach(reduction(+:u_ya) reduction(+:u_xa)){
+  if (y >= -10.&& y <= -5.0)
+  {
+     u_ya += u.y[];
+     u_xa += u.x[];
+     i += 1;
   }
-  fprintf (stderr,
-	   "%.8f %.8f %.8f %.8f\n", 
-	   t, sb,
-	   xb/sb, yb/sb);
+  }
+  
+  u_ya = u_ya/i;
+  u_xa = u_xa/i;//将区域内的y方向上的平均速度计算完成
+  static FILE * fp = fopen ("ouput", "w");
+  foreach(){
+  if (y >= -10. && y <= -5.0)
+  {
+     u_fy[] = u.y[] - u_ya;
+     u_fx[] = u.x[] - u_xa;//计算区域内的速度振荡
+     fprintf(fp,"%.8f %.8f %.8f %.8f\n", 
+     			x,  y,  u_fy[], u_fx[]);
+     fflush(fp);
+  }
+  }
+  
+}
+
+//用于检测运行时间
+event logfile (i += 20) {
+  fprintf (stderr,"%.8f\n",t);
   fflush (stderr);
+
 }
 
 /**
@@ -208,28 +226,7 @@ able to restart and for visualisation. In three dimensions, we compute
 the value of the $\lambda_2$ field which will be used for
 visualisation of vortices, as well as the streamwise vorticity
 $\omega_y = \partial_x u_z - \partial_z u_x$. */
-event images (t = 0) {
-  scalar l[];
-  foreach()
-    l[] = level;
-  output_ppm (l, file = "grid.png",min = 0, max = 20);
-}
 
-
-event snapshot (t = 1; t <= MAXTIME; t++)
-{
-  scalar l2[], omegay[];
-#if dimension == 3
-  lambda2 (u, l2);
-  foreach()
-    omegay[] = (u.z[1] - u.z[-1] - u.x[0,0,1] + u.x[0,0,-1])/(2.*Delta);
-  boundary ({omegay});
-#endif
-  
-  char name[80];
-  sprintf (name, "snap_shot/dump-%03d", (int) t);
-  dump (file = name);
-}
 //测试
 
 
